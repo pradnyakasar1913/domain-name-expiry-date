@@ -1,0 +1,38 @@
+<div class="container">
+  <h1 class="text-center">Domain Name Age Checker</h1>
+  <form action="/domainagechecker" method="post">
+    <div class="form-group">
+      <label for="domain">Domain URL:</label>
+      <input
+        class="form-control"
+        type="text"
+        name="domain"
+        id=""
+        placeholder="Domain name"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <button class="btn btn-block btn-danger">Get Domain Age</button>
+    </div>
+  </form>
+  <%if (flag) { %>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Domain Name</th>
+        <th>Creation Date</th>
+        <th>Domain Age</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><%=data.domainName%></td>
+        <td><%=date%></td>
+        <td><%=domainAge%></td>
+      </tr>
+    </tbody>
+  </table>
+  <% } %>
+  <br /><br />
+</div>
