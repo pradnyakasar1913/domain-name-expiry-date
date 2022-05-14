@@ -1,78 +1,8 @@
-// const moment = require("moment");
-
-// const whoisinfo = require("whois-json");
-
-// const bodyParser = require("body-parser");
-
-// var isValidDomain = require("is-valid-domain");
-
-// const express = require("express");
-
-// const app = express();
-
-// app.use(bodyParser.json());
-
-// app.use(bodyParser.urlencoded({ extended: false }));
-// app.set("view engine", "ejs");
-
-// app.get("/", (req, res) => {
-//   res.render("domainwhoisinfo", {
-//     title:
-//       "Whos is lookup info domain availability & register checker - freemediatools.com",
-//     data: "",
-//     flag: false,
-//     date: "",
-//     domainAge: "",
-//   });
-// });
-
-// // app.get("/domainwhoisinfo", (req, res) => {
-// //   res.render("domainwhoisinfo");
-// // });
-
-// app.post("/domainwhoisinfo", async (req, res) => {
-//   var domain = req.body.domain;
-//   console.log(domain);
-
-//   if (isValidDomain(domain)) {
-//     console.log(domain);
-//     var results = await whoisinfo(domain);
-//     console.log(results);
-
-//     var date = moment(results.creationDate).format("YYYY-MM-DD");
-//     var currentDate = moment(new Date()).format("YYYY-MM-DD");
-
-//     console.log(date);
-//     console.log(currentDate);
-
-//     var a = moment(date);
-//     var b = moment(currentDate);
-
-//     var years = b.diff(a, "year");
-//     a.add(years, "years");
-
-//     var months = b.diff(a, "months");
-
-//     res.render("domainwhoisinfo", { data: response });
-//   } else {
-//     res.send("please enter domain name without http or https");
-//   }
-// });
-
-// app.get("/domainagechecker", (req, res) => {
-//   res.render("domainagechecker", {
-//     title:
-//       "Check Domain Age Online - Website Age Checker - Domain Age Checker - FreeMediaTools.com",
-//     data: "",
-//     flag: false,
-//     date: "",
-//     domainAge: "",
-//   });
-// });
-
-// app.listen(4000);
-// console.log("App is listening on port 4000");
-
+import sslChecker from "ssl-checker";
+import express from "express";
+import urlExist from "url-exist";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 const moment = require("moment");
 
 const XLSX = require("xlsx");
@@ -93,15 +23,12 @@ const bodyParser = require("body-parser");
 
 const ExcelJS = require("exceljs");
 
-const wb = new ExcelJS.Workbook();
-
-const express = require("express");
-
 const { exec } = require("child_process");
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 let domains = [];
 
@@ -119,6 +46,7 @@ app.get("/", (req, res) => {
     date: "",
     domainAge: "",
     invalid: false,
+    sslInfo: "",
   });
 });
 
@@ -166,8 +94,27 @@ function removeHttp(url) {
   return url;
 }
 
+function addHttp(url) {
+  if (!/^https?:\/\//i.test(url)) {
+    return "http://" + url;
+  }
+}
+
+function checkHttppresent(url) {
+  if (url.indexOf("http://") == 0 || url.indexOf("https://") == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+
+const getSslDetails = async (hostname) => await sslChecker(hostname);
+
 app.post("/domainwhoisinfo", async (req, res) => {
   var domain = removeHttp(req.body.domain);
+  let sslInfo;
   console.log(domain);
   if (isValidDomain(domain)) {
     console.log(domain);
@@ -221,15 +168,41 @@ app.post("/domainwhoisinfo", async (req, res) => {
 
     exec(`python app.py`, (err, stdout, stderr) => {});
 
-    res.render("domainwhoisinfo", {
-      title:
-        "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
-      data: results,
-      flag: true,
-      date: date,
-      domainAge: domainAge,
-      invalid: false,
+    //get ssl info
+
+    let exists;
+  let httpPresent = checkHttppresent(domain);
+  console.log(httpPresent);
+  if (httpPresent) {
+    exists = await urlExist(domain);
+  } else {
+    exists = await urlExist(addHttp(domain));
+  }
+  console.log(exists);
+  if (exists) {
+    //let domain = req.body.domain;
+    var domain = removeHttp(domain);
+    console.log(domain);
+
+    getSslDetails(domain).then((response) => {
+
+      sslInfo = response
+
+      res.render("domainwhoisinfo", {
+        title:
+          "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
+        data: results,
+        flag: true,
+        date: date,
+        domainAge: domainAge,
+        sslInfo: sslInfo,
+        invalid: false,
+      });
     });
+  } else {
+  }
+
+
   } else {
     res.render("domainwhoisinfo", {
       title:
@@ -238,6 +211,7 @@ app.post("/domainwhoisinfo", async (req, res) => {
       flag: false,
       date: "",
       domainAge: "",
+      sslInfo: "",
       invalid: true,
     });
   }

@@ -33,8 +33,11 @@
                       <!-- <th>RegistrarWhoisServer</th>
                       <th>RegistrarUrl</th>
                       <th>Registrar</th> -->
+                      <th>SSL Creation Date</th>
+                      <th>SSL Expiry Date</th>
+                      <th>Valid SSL or Not</th>
+                      <th>Days Remaining</th>
                       <th>Domain Name Creation Date</th>
-                    
                      <th>Domain Name Expiration Date</th>
                      <th>Domain Age</th>
                      
@@ -43,11 +46,11 @@
                   <tbody>
                     <tr>
                       <td><%=data.domainName%></td>
-                      <!-- <td><%=data.registrarWhoisServer%></td>
-                      <td><%=data.registrarUrl%></td>
-                      <td><%=data.registrar%></td> -->
-                      <td><%=date%></td>
-                    
+                      <td><%=sslInfo.validFrom%></td>
+                      <td><%=sslInfo.validTo%></td>
+                      <td><%=sslInfo.valid%></td>
+                      <td><%=sslInfo.daysRemaining%></td>
+                      <td><%=date%></td>      
                       <td><%=data.registrarRegistrationExpirationDate%></td>
                       <td><%=domainAge%></td>
                     </tr>
