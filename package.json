@@ -18,6 +18,8 @@
     "is-valid-domain": "^0.1.6",
     "json2xls": "^0.1.2",
     "moment": "^2.29.3",
+    "node-cron": "^3.0.0",
+    "node-localstorage": "^2.2.1",
     "spread_sheet": "^2.2.1",
     "url-exist": "^3.0.0",
     "whois-json": "^2.0.4",

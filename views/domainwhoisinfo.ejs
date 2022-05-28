@@ -25,48 +25,49 @@
               </button>
           </div>
         </form>
+        <form action="/send-email" method="post">
           <%if (data) { %>
-              <table class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Domain Name</th>
-                      <!-- <th>RegistrarWhoisServer</th>
-                      <th>RegistrarUrl</th>
-                      <th>Registrar</th> -->
-                      <th>SSL Creation Date</th>
-                      <th>SSL Expiry Date</th>
-                      <th>Valid SSL or Not</th>
-                      <th>Days Remaining</th>
-                      <th>Domain Name Creation Date</th>
-                     <th>Domain Name Expiration Date</th>
-                     <th>Domain Age</th>
-                     
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><%=data.domainName%></td>
-                      <td><%=sslInfo.validFrom%></td>
-                      <td><%=sslInfo.validTo%></td>
-                      <td><%=sslInfo.valid%></td>
-                      <td><%=sslInfo.daysRemaining%></td>
-                      <td><%=date%></td>      
-                      <td><%=data.registrarRegistrationExpirationDate%></td>
-                      <td><%=domainAge%></td>
-                    </tr>
-                  </tbody>
-                </table>
-          <% } %>
+
+          <% data.forEach(domain => {%>
+
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Domain Name</th>
+                  <th>SSL creation </th>
+                  <th>SSL expiry</th>
+                  <th>Valid SSL or Not</th>
+                  <th>Days Remaining</th>
+                  <th>Domain Name Creation Date</th>
+                 <th>Expiry Date</th>
+                 <th>Domain Age</th>
+                 <th>Expiry Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><%=domain.domainName%></td>
+                  <td><%=domain.validFrom%></td>
+                  <td><%=domain.validTo%></td>
+                  <td><%=domain.valid%></td>
+                  <td><%=domain.days%></td>
+                  <td><%=domain.creationDate%></td>      
+                  <td><%=domain.expiryDate%></td>
+                  <td><%=domain.domainAge%></td>
+                  <td><%=domain.expiryDays%></td>
+                </tr>
+              </tbody>
+            
+            </table>
+            
+          <%})%>
+        </form>
           <br><br> 
+          <% } %>
           
-          <%if(invalid){%>
-          
-            <script type="text/javascript">
-              alert("Invalid Domain")
-            </script>
-          
-          <%}%>
-    
+        
+
+          <script src="index.js"></script>
       <br><br>  
 </body>
 <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->

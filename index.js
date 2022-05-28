@@ -2,6 +2,11 @@ import sslChecker from "ssl-checker";
 import express from "express";
 import urlExist from "url-exist";
 import { createRequire } from "module";
+import dotenv from "dotenv";
+dotenv.config();
+
+import nodemailer from "nodemailer";
+
 const require = createRequire(import.meta.url);
 const moment = require("moment");
 
@@ -15,9 +20,17 @@ const extractDomain = require("extract-domain");
 
 const isValidDomain = require("is-valid-domain");
 
+const cron = require('node-cron');
+
 var spread_sheet = require("spread_sheet");
 
 var json2xls = require("json2xls");
+
+const data = []
+// const { LocalStroage } = require("node-localstorage");
+// var localStorage1 = new LocalStroage("./scratch");
+// localStorage1.setItem("Name", "Manish Mandal");
+// console.log(localStorage1.getItem("Name"));
 
 const bodyParser = require("body-parser");
 
@@ -27,6 +40,7 @@ const { exec } = require("child_process");
 
 const app = express();
 
+// localStorage.setItem("Name", "Pradnya Kasar");
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -37,31 +51,59 @@ let fileEmpty = true;
 app.use(bodyParser.urlencoded({ extended: false }));
 app.set("view engine", "ejs");
 
+
 app.get("/", (req, res) => {
   res.render("domainwhoisinfo", {
     title:
       "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
-    data: "",
-    flag: false,
-    date: "",
-    domainAge: "",
-    invalid: false,
-    sslInfo: "",
+    data: []
   });
 });
 
-// app.get("/", (req, res) => {
-//   res.render("domainwhoisinfo", { data: "" });
-// });
+
 
 app.get("/domainagechecker", (req, res) => {
   res.render("domainagechecker", {
     title:
       "Check Domain Age Online - Website Age Checker - Domain Age Checker - FreeMediaTools.com",
     data: "",
-    flag: false,
-    date: "",
-    domainAge: "",
+  });
+});
+
+var smtpTransport = nodemailer.createTransport({
+  service: "gmail",
+  host: "smtp.gmail.com",
+  auth: {
+    user: "pradnyakasar1913@gmail.com",
+    pass: "pradnya1913",
+  },
+});
+
+app.get("/", function (req, res) {
+  res.sendfile("domainwhoisinfo.ejs");
+});
+
+app.get("/sendmail", function (req, res) {
+  var mailOptions = {
+    to: "pradnyarkasar@gmail.com",
+    subject: "Email from nodemailer",
+    html:
+      "<div>Domain Name: " +
+      req.query.Domainname +
+      "</div><div>Domain Name expiry data: " +
+      req.query.DomainExpiry +
+      "</div><div>SSL Certificate Expiry Date: " +
+      req.query.sslexpiry +
+      "</div><div>Message: " +
+      req.query.message +
+      "</div>",
+  };
+  smtpTransport.sendMail(mailOptions, function (error, response) {
+    if (error) {
+      res.end("error");
+    } else {
+      res.end("sent");
+    }
   });
 });
 
@@ -108,9 +150,10 @@ function checkHttppresent(url) {
   }
 }
 
-
-
 const getSslDetails = async (hostname) => await sslChecker(hostname);
+
+let results
+let json
 
 app.post("/domainwhoisinfo", async (req, res) => {
   var domain = removeHttp(req.body.domain);
@@ -118,25 +161,18 @@ app.post("/domainwhoisinfo", async (req, res) => {
   console.log(domain);
   if (isValidDomain(domain)) {
     console.log(domain);
-    var results = await whoisinfo(domain);
-    console.log(results);
-    // const students = [
-    //   {
-    //     name: Response.domainName,
-    //     email: Response.creationDate,
-    //     age: Response.registrarRegistrationExpirationDate,
-    //     gender: Response.domainAge,
-    //   },
-    //   { name: "Rahul", email: "rahul@gmail.com", age: 15, gender: "M" },
-    // ];
+    results = await whoisinfo(domain);
+    console.log(results)
 
     var date = moment(results.creationDate).format("YYYY-MM-DD");
+    var expiryDate = moment(results.registrarRegistrationExpirationDate).format("YYYY-MM-DD")
     var currentDate = moment(new Date()).format("YYYY-MM-DD");
 
     console.log(date);
     console.log(currentDate);
 
     var a = moment(date);
+    var ed = moment(expiryDate)
     var b = moment(currentDate);
 
     var years = b.diff(a, "year");
@@ -147,6 +183,10 @@ app.post("/domainwhoisinfo", async (req, res) => {
 
     var days = b.diff(a, "days");
 
+    var ddays = ed.diff(b,"days")
+
+    console.log("expiration days is" + ddays)
+
     var domainAge = years + " years " + months + " months " + days + " days";
 
     console.log(years);
@@ -155,67 +195,139 @@ app.post("/domainwhoisinfo", async (req, res) => {
 
     //console.log(year + "-" + month + "-" + dt);
 
-    let json = {
-      domainName: results.domainName,
-      creationDate: date,
-      expiryDate: results.registrarRegistrationExpirationDate,
-      domainAge: domainAge,
-    };
 
-    var xls = json2xls(json);
-
-    fs.writeFileSync(`downloads/${Date.now()}.xlsx`, xls, "binary");
-
-    exec(`python app.py`, (err, stdout, stderr) => {});
 
     //get ssl info
 
     let exists;
-  let httpPresent = checkHttppresent(domain);
-  console.log(httpPresent);
-  if (httpPresent) {
-    exists = await urlExist(domain);
-  } else {
-    exists = await urlExist(addHttp(domain));
-  }
-  console.log(exists);
-  if (exists) {
-    //let domain = req.body.domain;
-    var domain = removeHttp(domain);
-    console.log(domain);
+    let httpPresent = checkHttppresent(domain);
+    console.log(httpPresent);
+    if (httpPresent) {
+      exists = await urlExist(domain);
+    } else {
+      exists = await urlExist(addHttp(domain));
+    }
+    console.log(exists);
+    if (exists) {
+      //let domain = req.body.domain;
+      var domain = removeHttp(domain);
+      console.log(domain);
 
-    getSslDetails(domain).then((response) => {
+      getSslDetails(domain).then((response) => {
+        sslInfo = response;
+        console.log(sslInfo.valid)
+        console.log(sslInfo.daysRemaining)
+        console.log(sslInfo.validFrom)
+        
 
-      sslInfo = response
+        json = {
+          domainName: results.domainName,
+          creationDate: date,
+          expiryDate: moment(results.registrarRegistrationExpirationDate).format("YYYY-MM-DD"),
+          domainAge: domainAge,
+          valid:sslInfo.valid,
+          days:sslInfo.daysRemaining,
+          validFrom:sslInfo.validFrom,
+          validTo:sslInfo.validTo,
+          expiryDays:ddays
+        };
 
-      res.render("domainwhoisinfo", {
-        title:
-          "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
-        data: results,
-        flag: true,
-        date: date,
-        domainAge: domainAge,
-        sslInfo: sslInfo,
-        invalid: false,
+
+        data.push(json)
+
+        var xls = json2xls(json);
+
+        fs.writeFileSync(`downloads/${Date.now()}.xlsx`, xls, "binary");
+    
+        exec(`python app.py`, (err, stdout, stderr) => {});
+
+      
+
+
+
+        console.log(data)
+
+        res.render("domainwhoisinfo", {
+          title:
+            "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
+          data:data
+        });
       });
-    });
-  } else {
-  }
-
-
+    } else {
+    }
   } else {
     res.render("domainwhoisinfo", {
       title:
         "Whois Lookup Info Domain Availability & Registrar Checker - FreeMediaTools.com",
-      data: "",
-      flag: false,
-      date: "",
-      domainAge: "",
-      sslInfo: "",
-      invalid: true,
+      data: []
     });
   }
 });
 
-app.listen(7000);
-console.log("app listening on port 7000");
+cron.schedule('* * * * *', () => {
+  console.log(data)
+
+  // for domain email 
+
+  data.forEach(domain => {
+    if(domain.expiryDays <=3300){
+      let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD,
+        },
+      });
+        let mailOptions = {
+        from: "pradnyakasar1913@gmail.com", // TODO: email sender
+        to: "pradnyarkasar@gmail.com", // TODO: email receiver
+        subject: `${domain.domainName} is going to expire in ${domain.expiryDays} days please renew`,
+        html: `Hey Your ${domain.domainName} is going to expire in ${domain.expiryDays} days please renew`,
+        text: `Hey Your ${domain.domainName} is going to expire in ${domain.expiryDays} days please renew`,
+      };
+      
+      // Step 3
+      transporter.sendMail(mailOptions, (err, data) => {
+        if (err) {
+          return log("Error occurs", err);
+        }
+        return log("Email sent!!!");
+      });
+    }
+
+    // for ssl email
+
+    if(domain.days <=15){
+      let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD,
+        },
+      });
+        let mailOptions = {
+        from: "pradnyakasar1913@gmail.com", // TODO: email sender
+        to: "pradnyarkasar@gmail.com", // TODO: email receiver
+        subject: `${domain.domainName} SSL going to expire in ${domain.days} days please renew`,
+        html: `Hey Your ${domain.domainName} SSL is going to expire in ${domain.days} days please renew`,
+        text: `Hey Your ${domain.domainName} SSL is going to expire in ${domain.days} days please renew`,
+      };
+      
+      // Step 3
+      transporter.sendMail(mailOptions, (err, data) => {
+        if (err) {
+          return log("Error occurs", err);
+        }
+        return log("Email sent!!!");
+      });
+    }
+
+    
+  });
+
+
+});
+
+
+app.listen(8000);
+console.log("app listening on port 8000");
